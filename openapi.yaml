@@ -2,10 +2,26 @@ openapi: 3.0.2
 info:
   title: Simple Petstore API
   version: 1.0.0
+  x-kuadrant:
+    route:  ## HTTPRoute metadata
+      name: "petstore"
+      namespace: "petstore"
+      labels:  ## map[string]string
+        deployment: petstore
+      hostnames:  ## []gateway.networking.k8s.io/v1beta1.Hostname
+        - example.com
+      parentRefs:  ## []gateway.networking.k8s.io/v1beta1.ParentReference
+        - name: apiGateway
+          namespace: gateways
 servers:
   - url: http://localhost:8080/api/v3
 paths:
   /pet/findByStatus:
+    x-kuadrant:
+      backendRefs:
+      - name: petstore
+        namespace: petstore
+        port: 8080
     get:
       tags:
         - pet
@@ -31,7 +47,14 @@ paths:
         "400":
           description: Invalid status value
   /user/login:
+    x-kuadrant:
+      backendRefs:
+      - name: petstore
+        namespace: petstore
+        port: 8080
     get:
+      security:
+      - api_key: []
       tags:
         - user
       parameters:
@@ -53,6 +76,16 @@ paths:
         "400":
           description: Invalid username/password supplied
   /store/inventory:
+    x-kuadrant:
+      backendRefs:
+      - name: petstore
+        namespace: petstore
+        port: 8080
+        rate_limit:
+          rates:
+          - limit: 10
+            duration: 10
+            unit: second
     get:
       tags:
         - store
@@ -81,3 +114,8 @@ components:
             - available
             - pending
             - sold
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header
